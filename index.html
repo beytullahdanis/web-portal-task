@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>web-portal-task</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5em 0;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        .color-code {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-button {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .upload-button {
+            background-color: darkgreen;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        #uploadedImage {
+            max-width: 100%;
+            max-height: 400px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #openModalButton {
+            background-color: dodgerblue;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        #searchInput {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Web Portal Task</h1>
+    <input type="text" id="searchInput" placeholder="Search..">
+    <button id="openModalButton">Open Modal</button>
+
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <h3>Upload Image</h3>
+            <label for="imageUpload" class="upload-button">
+                Choose Image
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+            </label>
+            <img id="uploadedImage" src="#" alt="Uploaded Image">
+        </div>
+    </div>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Color Code</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        async function fetchData() {
+            const response = await fetch('fetch_data.php');
+            const data = await response.json();
+            console.log(data);
+            return data;
+        }
+
+        function renderTable(data) {
+            const tbody = document.querySelector('#dataTable tbody');
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.task}</td>
+                    <td>${item.title}</td>
+                    <td>${item.description}</td>
+                    <td style="background-color: ${item.colorCode}"></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function searchTable() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#dataTable tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
+        function autoRefresh() {
+            setInterval(async () => {
+                const data = await fetchData();
+                renderTable(data);
+            }, 3600000);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', searchTable);
+
+        document.getElementById('openModalButton').addEventListener('click', () => {
+            document.getElementById('imageModal').style.display = 'block';
+        });
+
+        document.getElementById('closeModalButton').addEventListener('click', () => {
+            document.getElementById('imageModal').style.display = 'none';
+        });
+
+        document.getElementById('imageUpload').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('uploadedImage').src = e.target.result;
+                    document.getElementById('uploadedImage').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        (async () => {
+            const data = await fetchData();
+            renderTable(data);
+            autoRefresh();
+        })();
+    </script>
+</body>
+
+</html>
